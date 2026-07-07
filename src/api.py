@@ -24,6 +24,16 @@ class OSRSApiClient:
         market_price = self.fetch_latest_prices()
         return market_price['data'].get(str(item_id), None)
     
+    #Fuzzy search for items by name, returning a list of matches
+    def search_items_by_name(self, target_name):
+        catalog = self.fetch_item_info()
+        matches = []
+
+        for item in catalog:
+            if target_name.lower() in item['name'].lower():
+                matches.append(item)
+        return matches
+    
     # Get item details by name, including its ID and price data
     def get_item_by_name(self, target_name):
         
