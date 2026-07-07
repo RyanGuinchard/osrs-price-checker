@@ -1,5 +1,7 @@
 import os
 import requests
+import json
+import time
 
 class OSRSApiClient:
     def __init__(self):
@@ -14,11 +16,33 @@ class OSRSApiClient:
     
     # Fetch the item mapping from the OSRS Wiki API
     def fetch_item_info(self):
-        info_url = f"{self.base_url}/mapping"
-        response = requests.get(info_url, headers=self.headers)
-        return response.json()
+            cache_filename = "item_cache.json"
+            one_day_in_seconds = 86400
 
-    
+            if os.path.exists(cache_filename):
+                file_modified_time = os.path.getmtime(cache_filename)
+                current_time = time.time()
+                
+                if (current_time - file_modified_time) < one_day_in_seconds:
+                    with open(cache_filename, "r") as file:
+                        return json.load(file)
+                else:
+                    print("\n[Cache Expired] Fetching fresh item catalog from Wiki...")
+
+            # File doesn't exist or is expired - fetch using our class headers!
+            info_url = f"{self.base_url}/mapping"
+            response = requests.get(info_url, headers=self.headers)
+            
+            if response.status_code == 200:
+                catalog_data = response.json()
+                with open(cache_filename, "w") as file:
+                    json.dump(catalog_data, file, indent=4)
+                return catalog_data
+            else:
+                print(f"Error fetching catalog: {response.status_code}")
+                return []
+
+        
     # Fetch the price data for a specific item by its ID
     def fetch_item_prices(self, item_id):
         market_price = self.fetch_latest_prices()
